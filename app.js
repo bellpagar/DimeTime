@@ -7,7 +7,8 @@
   };
   const parseDate = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
   const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'MYR',maximumFractionDigits:2}).format(Number(n)||0);
-  const setTheme = (theme) => { const valid=['emerald','ruby','gold'].includes(theme)?theme:'emerald'; document.body.dataset.theme=valid; localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#571a2a':valid==='gold'?'#171511':'#064c3a'; };
+  const themeNames={emerald:'Emerald marble',ruby:'Ruby marble',gold:'Black & gold marble'};
+  const setTheme = (theme) => { const valid=themeNames[theme]?theme:'emerald'; document.body.dataset.theme=valid; $('themeControl').dataset.current=valid; localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#571a2a':valid==='gold'?'#171511':'#064c3a'; $('themeCurrent').textContent=themeNames[valid]; document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.themeChoice===valid))); };
   const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
   let state = defaultState();
   let cloud = null;
@@ -41,7 +42,14 @@
   };
   const init = () => {
     const now = new Date();
-    const theme=localStorage.getItem('dimetime-theme')||'emerald'; setTheme(theme); $('themeSelect').value=theme; $('themeSelect').addEventListener('change',e=>setTheme(e.target.value));
+    const theme=localStorage.getItem('dimetime-theme')||'emerald'; setTheme(theme);
+    const themeControl=$('themeControl'), themeTrigger=$('themeTrigger'), themeMenu=$('themeMenu');
+    const closeThemeMenu=()=>{themeControl.classList.remove('open');themeTrigger.setAttribute('aria-expanded','false');};
+    const openThemeMenu=()=>{themeControl.classList.add('open');themeTrigger.setAttribute('aria-expanded','true');};
+    themeTrigger.addEventListener('click',()=>themeControl.classList.contains('open')?closeThemeMenu():openThemeMenu());
+    themeMenu.addEventListener('click',e=>{const option=e.target.closest('[data-theme-choice]');if(!option)return;setTheme(option.dataset.themeChoice);closeThemeMenu();themeTrigger.focus();});
+    document.addEventListener('pointerdown',e=>{if(!themeControl.contains(e.target))closeThemeMenu();});
+    themeControl.addEventListener('keydown',e=>{const options=[...themeMenu.querySelectorAll('[data-theme-choice]')];if(e.key==='Escape'){closeThemeMenu();themeTrigger.focus();}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!themeControl.classList.contains('open'))openThemeMenu();const current=options.indexOf(document.activeElement);options[(current+(e.key==='ArrowDown'?1:options.length-1))%options.length].focus();}});
     $('dateLabel').textContent=now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
     $('todayShort').textContent=now.toLocaleDateString(undefined,{month:'short',day:'numeric'}).toUpperCase();
     for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=i;o.textContent=`${i}${i%10===1&&i!==11?'st':i%10===2&&i!==12?'nd':i%10===3&&i!==13?'rd':'th'} of each month`;if(i===4)o.selected=true;$('monthlyDay').append(o);}
