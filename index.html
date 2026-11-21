@@ -2,14 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#064c3a"><title>Daymark — money &amp; days, in balance</title>
+  <meta name="theme-color" content="#064c3a"><title>DimeTime — money &amp; days, in balance</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <section id="authGate" class="auth-gate" aria-label="DimeTime account">
+    <div class="auth-card"><a class="brand auth-brand" href="#"><span class="brand-icon">DT</span><span>DimeTime<small>YOUR PERSONAL RHYTHM</small></span></a><div class="eyebrow">YOUR PRIVATE SPACE</div><h1 id="authTitle">Welcome back.</h1><p id="authIntro">Sign in to see your money and plans on any of your devices.</p><div id="authConfigNotice" class="auth-message hidden">Account sign-in is being connected. Your app data is not sent anywhere until the secure account service is configured.</div><form id="authForm" class="stack-form"><label class="field"><span>EMAIL · YOUR USERNAME</span><input id="authEmail" type="email" autocomplete="username" required placeholder="you@example.com"></label><label class="field"><span>PASSWORD</span><input id="authPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></label><label id="confirmPasswordField" class="field hidden"><span>CONFIRM PASSWORD</span><input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="8" placeholder="Enter your password again"></label><div id="authError" class="auth-error" role="alert"></div><button id="authSubmit" class="button primary auth-submit" type="submit">Sign in <span>→</span></button></form><button id="forgotPassword" class="auth-forgot" type="button">Forgot password?</button><button id="authModeToggle" class="auth-toggle" type="button">New to DimeTime? Create an account</button><div class="auth-privacy">♢ <span>Your records are tied to your account and protected by database access rules.</span></div></div>
+  </section>
   <aside class="sidebar">
-    <a class="brand" href="#income"><span class="brand-icon">d.</span><span>daymark<small>YOUR PERSONAL RHYTHM</small></span></a>
+    <a class="brand" href="#income"><span class="brand-icon">DT</span><span>DimeTime<small>YOUR PERSONAL RHYTHM</small></span></a>
     <div class="side-label">YOUR SPACE</div>
     <nav id="nav">
       <button class="nav-link active" data-page="income"><span class="nav-icon">◷</span><span>Today &amp; income</span><b>01</b></button>
@@ -22,7 +25,7 @@
     <div class="sidebar-bottom"><div class="privacy-mark">✳ <span>Your data stays on this device.</span></div><div class="version">A LITTLE MORE IN BALANCE</div></div>
   </aside>
   <main class="main">
-    <header class="topbar"><div class="crumb">YOUR SPACE <span>/</span> <strong id="crumb">TODAY &amp; INCOME</strong></div><div class="top-actions"><label class="currency-choice">CURRENCY <select id="currencySelect" aria-label="Display currency"><option>USD</option><option>SGD</option><option>MYR</option><option>AUD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>INR</option><option>PHP</option><option>IDR</option></select></label><div class="top-date"><span class="live-dot"></span><span id="dateLabel"></span></div></div></header>
+    <header class="topbar"><div class="crumb">YOUR SPACE <span>/</span> <strong id="crumb">TODAY &amp; INCOME</strong></div><div class="top-actions"><span id="accountLabel" class="account-label"></span><button id="signOutButton" class="signout-button">Sign out</button><label class="currency-choice">CURRENCY <select id="currencySelect" aria-label="Display currency"><option>USD</option><option>SGD</option><option>MYR</option><option>AUD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>INR</option><option>PHP</option><option>IDR</option></select></label><div class="top-date"><span class="live-dot"></span><span id="dateLabel"></span></div></div></header>
     <section class="page active" id="page-income">
       <div class="page-heading"><div><div class="eyebrow">A CLEAR START</div><h1>Make today <em>count.</em></h1><p class="lede">A quick check-in for your money, and a little intention for the day.</p></div><div class="heading-stamp">✳ <span>YOUR DAILY<br>CHECK-IN</span></div></div>
       <div class="income-grid">
@@ -70,6 +73,7 @@
     <footer>Made for a steadier day <span>✳</span></footer>
   </main>
   <div id="toast" class="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body></html>
-

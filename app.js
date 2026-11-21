@@ -8,11 +8,24 @@
   const parseDate = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
   const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency||'USD',maximumFractionDigits:2}).format(Number(n)||0);
   const defaultState = () => ({salary:0,currency:'USD',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
-  let state;
-  try { state = {...defaultState(), ...JSON.parse(localStorage.getItem(KEY) || '{}')}; } catch { state = defaultState(); }
+  let state = defaultState();
+  let cloud = null;
+  let currentUser = null;
+  let lastUpdatedAt = null;
+  let saveTimer = null;
+  let syncBusy = false;
+  let changeRevision = 0;
+  let authMode = 'signin';
+  let activationUserId = null;
   let selectedDate = localDate();
   let toastTimer;
-  const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+  const save = () => {
+    if (!cloud || !currentUser) return;
+    const revision = ++changeRevision;
+    const snapshot = JSON.parse(JSON.stringify(state));
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => persistCloud(snapshot, revision), 350);
+  };
   const escapeHTML = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const showToast = (s) => { const t=$('toast'); t.textContent=s; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2800); };
   const plural = (n,word) => `${n} ${word}${n===1?'':'s'}`;
@@ -46,16 +59,38 @@
     $('scheduleForm').onsubmit=e=>{e.preventDefault();state.tasks.push({id:crypto.randomUUID(),text:$('taskText').value.trim(),date:$('taskDate').value,time:$('taskTime').value,done:false});save();const date=$('taskDate').value;e.target.reset();$('taskDate').value=date;$('taskDate').min=localDate();renderSchedule();showToast('Added to your plan.');};
     $('prevDay').onclick=()=>moveSelected(-1);$('nextDay').onclick=()=>moveSelected(1);
     $('enableNotifications').onclick=enableNotifications;
+    $('authModeToggle').onclick=()=>setAuthMode(authMode==='signin'?'signup':'signin');
+    $('authForm').onsubmit=handleAuthSubmit;
+    $('forgotPassword').onclick=handleForgotPassword;
+    $('signOutButton').onclick=signOut;
     $('monthlyList').onclick=e=>{const b=e.target.closest('[data-delete-bill]');if(b){state.bills=state.bills.filter(x=>x.id!==b.dataset.deleteBill);save();render();showToast('Bill removed.');}};
     $('annualList').onclick=e=>{const b=e.target.closest('[data-delete-annual]');if(b){state.annual=state.annual.filter(x=>x.id!==b.dataset.deleteAnnual);save();render();showToast('Yearly cost removed.');}};
     $('dailyExpenseList').onclick=deleteDailyExpense;$('insightExpenseList').onclick=deleteDailyExpense;
     $('taskList').onclick=e=>{const check=e.target.closest('[data-task]');if(check){const task=state.tasks.find(x=>x.id===check.dataset.task);if(task){task.done=!task.done;save();renderSchedule();}}const del=e.target.closest('[data-delete-task]');if(del){state.tasks=state.tasks.filter(x=>x.id!==del.dataset.deleteTask);save();renderSchedule();showToast('Task removed.');}};
     $('taskDate').min=localDate();
-    render(); checkReminders(); setInterval(checkReminders,60000);
+    initializeCloudAuth(); setInterval(checkReminders,60000);setInterval(refreshCloudState,15000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders();});
   };
   function setReceived(value){state.received=value;save();$('receivedYes').classList.toggle('active',value);$('receivedNo').classList.toggle('active',!value);$('incomeAmount').disabled=!value;$('incomeForm').classList.toggle('disabled',!value);$('todayNote').textContent=value?'Add the amount above and save your check-in.':'That’s okay. You can check in again tomorrow.';}
   function go(page){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${page}`));document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const names={income:'TODAY & INCOME',daily:'DAILY EXPENSES',monthly:'MONTHLY BILLS',annual:'YEARLY OUTLOOK',schedule:'DAILY RHYTHM',insight:'MONTHLY INSIGHT'};$('crumb').textContent=names[page];}
+  function initializeCloudAuth(){
+    const cfg=window.DAYMARK_CONFIG||{};
+    if(!window.supabase?.createClient||!cfg.supabaseUrl||!cfg.supabasePublishableKey){$('authTitle').textContent='Secure sign-in setup';$('authIntro').textContent='Your account service needs to be connected before DimeTime can sign you in.';$('authConfigNotice').classList.remove('hidden');$('authForm').querySelectorAll('input,button').forEach(x=>x.disabled=true);return;}
+    cloud=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    cloud.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){authMode='recovery';$('authTitle').textContent='Choose a new password.';$('authIntro').textContent='Set a new password for your DimeTime account.';$('authEmail').value=session.user.email||'';$('authEmail').readOnly=true;$('confirmPasswordField').classList.remove('hidden');$('authModeToggle').classList.add('hidden');$('forgotPassword').classList.add('hidden');$('authSubmit').innerHTML='Update password <span>→</span>';return;}if(!session){if(currentUser)lockApp();return;}if(session.user.id!==activationUserId)setTimeout(()=>activateSession(session),0);});
+    cloud.auth.getSession().then(({data,error})=>{if(error){$('authError').textContent='Could not check your sign-in. Please refresh and try again.';return;}if(data.session)activateSession(data.session);});
+  }
+  function setAuthMode(mode){authMode=mode;const signup=mode==='signup';$('authTitle').textContent=signup?'Create your DimeTime account.':'Welcome back.';$('authIntro').textContent=signup?'Use your email as your username. Your account will keep your data available across devices.':'Sign in to see your money and plans on any of your devices.';$('authSubmit').innerHTML=signup?'Create account <span>→</span>':'Sign in <span>→</span>';$('authModeToggle').textContent=signup?'Already have an account? Sign in':'New to DimeTime? Create an account';$('authModeToggle').classList.remove('hidden');$('forgotPassword').classList.toggle('hidden',signup);$('confirmPasswordField').classList.toggle('hidden',!signup);$('authEmail').readOnly=false;$('authPassword').autocomplete=signup?'new-password':'current-password';$('authError').textContent='';}
+  async function handleAuthSubmit(event){event.preventDefault();if(!cloud){$('authError').textContent='Secure sign-in is not configured yet.';return;}const email=$('authEmail').value.trim().toLowerCase(),password=$('authPassword').value,button=$('authSubmit');if((authMode==='signup'||authMode==='recovery')&&password!==$('authPasswordConfirm').value){$('authError').textContent='Those passwords do not match.';return;}button.disabled=true;$('authError').textContent='';try{if(authMode==='recovery'){const {error}=await cloud.auth.updateUser({password});if(error)throw error;$('authError').textContent='Password updated. Signing you in…';const {data}=await cloud.auth.getSession();if(data.session)await activateSession(data.session);}else if(authMode==='signup'){const {data,error}=await cloud.auth.signUp({email,password,options:{emailRedirectTo:window.location.href}});if(error)throw error;if(data.session)await activateSession(data.session);else $('authError').textContent='Check your email to confirm the account, then come back here to sign in.';}else{const {data,error}=await cloud.auth.signInWithPassword({email,password});if(error)throw error;await activateSession(data.session);}}catch(error){$('authError').textContent=error.message||'Sign-in failed. Please try again.';}finally{button.disabled=false;}}
+  async function handleForgotPassword(){if(!cloud){$('authError').textContent='Secure sign-in is not configured yet.';return;}const email=$('authEmail').value.trim().toLowerCase();if(!email){$('authError').textContent='Enter your email first, then request a reset link.';return;}$('forgotPassword').disabled=true;const {error}=await cloud.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});$('authError').textContent=error?error.message:'If the account exists, a password reset link is on its way.';$('forgotPassword').disabled=false;}
+  async function activateSession(session){if(!session||!cloud||activationUserId===session.user.id&&currentUser)return;activationUserId=session.user.id;currentUser=session.user;$('authError').textContent='';try{const {data,error}=await cloud.from('daymark_private_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();if(error)throw error;if(data){state={...defaultState(),...data.data};lastUpdatedAt=data.updated_at;}else{let imported=false;const legacy=localStorage.getItem(KEY);if(legacy&&window.confirm('DimeTime found data saved on this device. Import it into your account so it is available on your other devices?')){try{state={...defaultState(),...JSON.parse(legacy)};imported=true;}catch{state=defaultState();}}else state=defaultState();const saved=await persistCloudNow(state);if(saved.error)throw saved.error;if(imported)localStorage.removeItem(KEY);}
+      $('accountLabel').textContent=session.user.email;$('authGate').classList.add('hidden');document.body.classList.remove('locked');render();
+    }catch(error){currentUser=null;activationUserId=null;$('authError').textContent=error.message?.includes('daymark_private_data')?'The secure data table is not set up yet. Finish the database setup, then sign in again.':'Could not load your private DimeTime data. Please try again.';}}
+  async function persistCloudNow(snapshot){if(!currentUser||!cloud)return {error:new Error('Not signed in')};const {data,error}=await cloud.from('daymark_private_data').upsert({user_id:currentUser.id,data:snapshot},{onConflict:'user_id'}).select('updated_at').single();if(!error)lastUpdatedAt=data.updated_at;return {data,error};}
+  async function persistCloud(snapshot,revision){if(!currentUser||syncBusy)return;syncBusy=true;const {error}=await persistCloudNow(snapshot);syncBusy=false;if(error){showToast('Could not sync just now. Check your connection.');return;}if(revision<changeRevision)save();}
+  async function refreshCloudState(){if(!currentUser||!cloud||syncBusy||saveTimer)return;const focused=document.activeElement;if(focused&&focused.matches('input,select,textarea'))return;try{const {data,error}=await cloud.from('daymark_private_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();if(error||!data||!data.updated_at||data.updated_at<=lastUpdatedAt)return;state={...defaultState(),...data.data};lastUpdatedAt=data.updated_at;render();}catch{}}
+  async function signOut(){if(saveTimer){clearTimeout(saveTimer);const snapshot=JSON.parse(JSON.stringify(state));await persistCloudNow(snapshot);}await cloud?.auth.signOut();lockApp();}
+  function lockApp(){currentUser=null;activationUserId=null;lastUpdatedAt=null;state=defaultState();$('accountLabel').textContent='';$('authGate').classList.remove('hidden');document.body.classList.add('locked');setAuthMode('signin');}
   function render(){renderIncome();renderDaily();renderMonthly();renderAnnual();renderSchedule();renderInsight();}
   function renderIncome(){const today=localDate(), amount=state.incomeLog[today]||0;$('salaryAmount').value=state.salary||'';$('salaryAnnual').textContent=money(state.salary*12);$('statToday').textContent=money(amount);$('todayStatus').textContent=state.received===false?'No money received today':amount?'Logged today':'Check in when ready';$('incomeAmount').value=amount||'';if(state.received===null)state.received=Boolean(amount);$('receivedYes').classList.toggle('active',state.received);$('receivedNo').classList.toggle('active',!state.received);$('incomeAmount').disabled=!state.received;$('incomeForm').classList.toggle('disabled',!state.received);$('todayNote').textContent=amount?'Today’s income is saved. You can update it any time.':state.received?'Your check-in is ready whenever you are.':'That’s okay. You can check in again tomorrow.';$('statMonthly').textContent=money(state.bills.reduce((a,b)=>a+b.amount,0));$('billCount').textContent=state.bills.length;$('statAnnual').textContent=money(state.annual.reduce((a,b)=>a+b.amount,0));}
   function renderMonthly(){const total=state.bills.reduce((s,b)=>s+b.amount,0),pct=Number($('monthlyPercent').value||30),suggest=total/(pct/100);$('monthlyTotal').innerHTML=`${money(total)}<span> / month</span>`;$('monthlySalary').innerHTML=`${money(suggest)} <small>suggested monthly income at ${pct}%</small>`;$('monthlyHint').textContent=total?`Your bills would use ${pct}% of a ${money(suggest)} monthly income.`:'Add a bill to see your suggested income.';$('monthlyListCount').textContent=state.bills.length;
@@ -76,10 +111,9 @@
     const isToday=selectedDate===today,card=$('productivityCard');card.style.display=isToday?'flex':'none';if(isToday){const title=tasks.length===0?'Every day starts somewhere.':pct===100?'A day well spent.':pct>=50?'You made good progress.':pct>0?'A steady start.':'Your plan is ready when you are.';const text=tasks.length===0?'Add a few things you would like to make room for today.':`${done} of ${plural(tasks.length,'task')} complete (${pct}%). ${pct===100?'Take a moment to appreciate what you got done.':'Keep going at your own pace.'}`;$('productivityTitle').textContent=title;$('productivityText').textContent=text;}}
   function fmtTime(t){const [h,m]=t.split(':').map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
   async function enableNotifications(){if(!('Notification'in window)){showToast('This browser does not support notifications.');return;}if(Notification.permission==='granted'){showToast('Reminders are enabled.');checkReminders();return;}const permission=await Notification.requestPermission();showToast(permission==='granted'?'Reminders are enabled.':'Notifications were not enabled.');if(permission==='granted')checkReminders();}
-  function checkReminders(){const today=localDate(),now=new Date(),notifs=state.notified||[];for(const b of state.bills){const due=nextBillDate(b.day,now),remind=new Date(due);remind.setDate(remind.getDate()-3);if(localDate(remind)===today){const key=`bill:${b.id}:${localDate(due)}`;if(!notifs.includes(key)){notify(`Bill coming up: ${b.name}`,`${money(b.amount)} is due in 3 days, on ${due.toLocaleDateString(undefined,{month:'long',day:'numeric'})}.`);notifs.push(key);}}}
+  function checkReminders(){if(!currentUser)return;const today=localDate(),now=new Date(),notifs=state.notified||[];for(const b of state.bills){const due=nextBillDate(b.day,now),remind=new Date(due);remind.setDate(remind.getDate()-3);if(localDate(remind)===today){const key=`bill:${b.id}:${localDate(due)}`;if(!notifs.includes(key)){notify(`Bill coming up: ${b.name}`,`${money(b.amount)} is due in 3 days, on ${due.toLocaleDateString(undefined,{month:'long',day:'numeric'})}.`);notifs.push(key);}}}
     for(const t of state.tasks){if(!t.time||t.done)continue;const taskDate=parseDate(t.date),[h,m]=t.time.split(':').map(Number),event=new Date(taskDate.getFullYear(),taskDate.getMonth(),taskDate.getDate(),h,m),delta=event-now;if(delta>0&&delta<=3600000){const key=`task:${t.id}:${t.date}`;if(!notifs.includes(key)){const mins=Math.max(1,Math.ceil(delta/60000));notify(`Coming up: ${t.text}`,`Your task is in about ${mins} minute${mins===1?'':'s'}.`);notifs.push(key);}}}
     state.notified=notifs.slice(-250);save();}
   function notify(title,body){if('Notification'in window&&Notification.permission==='granted'){new Notification(title,{body});}else showToast(`${title} — ${body}`);}
   init();
 })();
-
