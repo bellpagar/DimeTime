@@ -6,8 +6,8 @@
     return x.toISOString().slice(0, 10);
   };
   const parseDate = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
-  const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency||'USD',maximumFractionDigits:2}).format(Number(n)||0);
-  const defaultState = () => ({salary:0,currency:'USD',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
+  const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'MYR',maximumFractionDigits:2}).format(Number(n)||0);
+  const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
   let state = defaultState();
   let cloud = null;
   let currentUser = null;
@@ -40,7 +40,6 @@
   };
   const init = () => {
     const now = new Date();
-    $('currencySelect').value=state.currency||'USD';$('currencySelect').onchange=e=>{state.currency=e.target.value;save();render();};
     $('dateLabel').textContent=now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
     $('todayShort').textContent=now.toLocaleDateString(undefined,{month:'short',day:'numeric'}).toUpperCase();
     for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=i;o.textContent=`${i}${i%10===1&&i!==11?'st':i%10===2&&i!==12?'nd':i%10===3&&i!==13?'rd':'th'} of each month`;if(i===4)o.selected=true;$('monthlyDay').append(o);}
@@ -117,3 +116,4 @@
   function notify(title,body){if('Notification'in window&&Notification.permission==='granted'){new Notification(title,{body});}else showToast(`${title} — ${body}`);}
   init();
 })();
+
