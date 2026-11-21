@@ -17,4 +17,5 @@ body{position:relative;isolation:isolate;background:#063c30}
 @media(max-width:740px){.theme-control{gap:4px;font-size:7px}.theme-trigger{min-width:0;max-width:138px;gap:6px;padding:6px}.theme-menu{width:196px}.top-actions{gap:6px}}
 @media(prefers-reduced-motion:reduce){.marble-layer,.theme-trigger,.theme-chevron,.theme-menu,.theme-option,.theme-check{transition:none!important}}
 body[data-theme="ruby"],body[data-theme="gold"]{background-color:#063c30;background-image:none}
+.remember-row{display:flex;align-items:center;gap:9px;margin:1px 0 4px;color:#59665d;font:500 10px var(--sans);cursor:pointer}.remember-row input{appearance:auto!important;width:14px!important;height:14px!important;margin:0!important;accent-color:#286b4b;cursor:pointer}.remember-row span{line-height:1.4}
 
