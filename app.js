@@ -7,6 +7,7 @@
   };
   const parseDate = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
   const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'MYR',maximumFractionDigits:2}).format(Number(n)||0);
+  const setTheme = (theme) => { const valid=['emerald','ruby','gold'].includes(theme)?theme:'emerald'; document.body.dataset.theme=valid; localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#571a2a':valid==='gold'?'#171511':'#064c3a'; };
   const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
   let state = defaultState();
   let cloud = null;
@@ -40,6 +41,7 @@
   };
   const init = () => {
     const now = new Date();
+    const theme=localStorage.getItem('dimetime-theme')||'emerald'; setTheme(theme); $('themeSelect').value=theme; $('themeSelect').addEventListener('change',e=>setTheme(e.target.value));
     $('dateLabel').textContent=now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
     $('todayShort').textContent=now.toLocaleDateString(undefined,{month:'short',day:'numeric'}).toUpperCase();
     for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=i;o.textContent=`${i}${i%10===1&&i!==11?'st':i%10===2&&i!==12?'nd':i%10===3&&i!==13?'rd':'th'} of each month`;if(i===4)o.selected=true;$('monthlyDay').append(o);}
