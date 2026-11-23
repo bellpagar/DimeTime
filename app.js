@@ -9,7 +9,7 @@
   const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'MYR',maximumFractionDigits:2}).format(Number(n)||0);
   const themeNames={emerald:'Emerald',ruby:'Ruby',gold:'Dark'};
   const setTheme = (theme) => { const valid=themeNames[theme]?theme:'emerald'; document.body.dataset.theme=valid; $('themeControl')?.setAttribute('data-current',valid); localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#841922':valid==='gold'?'#171511':'#064c3a'; if($('themeCurrent'))$('themeCurrent').textContent=themeNames[valid]; document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.themeChoice===valid))); };
-  const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
+  const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],expenseCategories:[],tasks:[],incomeLog:{},received:null,notified:[]});
   let state = defaultState();
   let cloud = null;
   let currentUser = null;
@@ -64,8 +64,9 @@
     document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
     $('receivedYes').onclick=()=>setReceived(true);$('receivedNo').onclick=()=>setReceived(false);
     $('incomeForm').onsubmit=e=>{e.preventDefault();const a=Number($('incomeAmount').value);if(!a||a<0){showToast('Enter an amount greater than zero.');return;}state.incomeLog[localDate()]=a;state.received=true;save();render();showToast('Today’s income has been saved.');};
-    $('expenseCategoryButton').addEventListener('click',()=>setCategoryEditor(!$('categoryEditor').classList.contains('open')));
+    $('expenseCategoryButton').addEventListener('click',()=>{renderSavedExpenseCategories();setCategoryEditor(!$('categoryEditor').classList.contains('open'));});
     $('applyExpenseCategory').addEventListener('click',applyExpenseCategory);
+    $('expenseCategoryChoices').addEventListener('click',e=>{const option=e.target.closest('[data-saved-expense-category]');if(option)useExpenseCategory(option.dataset.savedExpenseCategory);});
     $('cancelExpenseCategory').addEventListener('click',()=>{if(!selectedExpenseCategory)$('expenseCategoryInput').value='';else $('expenseCategoryInput').value=selectedExpenseCategory;setCategoryEditor(false);});
     $('expenseCategoryInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyExpenseCategory();}else if(e.key==='Escape'){setCategoryEditor(false);$('expenseCategoryButton').focus();}});
     $('salaryForm').onsubmit=e=>{e.preventDefault();state.salary=Math.max(0,Number($('salaryAmount').value)||0);save();render();showToast('Monthly income updated.');};
@@ -88,8 +89,11 @@
     initializeCloudAuth(); setInterval(checkReminders,60000);setInterval(refreshCloudState,15000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders();});
   };
+  function savedExpenseCategories(){const names=[...(Array.isArray(state.expenseCategories)?state.expenseCategories:[]),...(state.dailyExpenses||[]).map(x=>x.category).filter(Boolean)],seen=new Set();return names.map(x=>String(x).trim()).filter(x=>{const key=x.toLocaleLowerCase();if(!x||seen.has(key))return false;seen.add(key);return true;}).sort((a,b)=>a.localeCompare(b));}
+  function renderSavedExpenseCategories(){const wrap=$('expenseCategoryChoices'),list=$('savedExpenseCategoryList'),names=savedExpenseCategories();wrap.classList.toggle('hidden',!names.length);list.innerHTML=names.map(name=>`<button class="saved-category-chip ${selectedExpenseCategory.toLocaleLowerCase()===name.toLocaleLowerCase()?'selected':''}" type="button" data-saved-expense-category="${escapeHTML(name)}">${escapeHTML(name)}</button>`).join('');}
+  function useExpenseCategory(category){selectedExpenseCategory=category;$('expenseCategoryValue').textContent=category;$('expenseCategoryInput').value=category;setCategoryEditor(false);$('expenseSubject').focus();}
   function setCategoryEditor(open){const editor=$('categoryEditor'),button=$('expenseCategoryButton');editor.classList.toggle('open',open);button.closest('.category-entry').classList.toggle('open',open);editor.setAttribute('aria-hidden',String(!open));button.setAttribute('aria-expanded',String(open));if(open)setTimeout(()=>$('expenseCategoryInput').focus(),80);}
-  function applyExpenseCategory(){const category=$('expenseCategoryInput').value.trim();if(!category){$('expenseCategoryInput').focus();showToast('Type your category first.');return;}selectedExpenseCategory=category;$('expenseCategoryValue').textContent=category;setCategoryEditor(false);$('expenseSubject').focus();}
+  function applyExpenseCategory(){const typed=$('expenseCategoryInput').value.trim();if(!typed){$('expenseCategoryInput').focus();showToast('Type your category first.');return;}const category=savedExpenseCategories().find(x=>x.toLocaleLowerCase()===typed.toLocaleLowerCase())||typed;state.expenseCategories=Array.isArray(state.expenseCategories)?state.expenseCategories:[];if(!state.expenseCategories.some(x=>String(x).toLocaleLowerCase()===category.toLocaleLowerCase()))state.expenseCategories.push(category);save();useExpenseCategory(category);}
   function setReceived(value){state.received=value;save();$('receivedYes').classList.toggle('active',value);$('receivedNo').classList.toggle('active',!value);$('incomeAmount').disabled=!value;$('incomeForm').classList.toggle('disabled',!value);$('todayNote').textContent=value?'Add the amount above and save your check-in.':'That’s okay. You can check in again tomorrow.';}
   function go(page){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${page}`));document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const names={income:'TODAY & INCOME',daily:'DAILY EXPENSES',monthly:'MONTHLY BILLS',annual:'YEARLY OUTLOOK',schedule:'DAILY RHYTHM',insight:'MONTHLY INSIGHT'};$('crumb').textContent=names[page];}
   function initializeCloudAuth(){
