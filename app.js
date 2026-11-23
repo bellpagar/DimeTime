@@ -20,6 +20,7 @@
   let authMode = 'signin';
   let activationUserId = null;
   let selectedDate = localDate();
+  let selectedExpenseCategory = '';
   let toastTimer;
   const save = () => {
     if (!cloud || !currentUser) return;
@@ -63,11 +64,14 @@
     document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
     $('receivedYes').onclick=()=>setReceived(true);$('receivedNo').onclick=()=>setReceived(false);
     $('incomeForm').onsubmit=e=>{e.preventDefault();const a=Number($('incomeAmount').value);if(!a||a<0){showToast('Enter an amount greater than zero.');return;}state.incomeLog[localDate()]=a;state.received=true;save();render();showToast('Today’s income has been saved.');};
-    $('expenseCategory').addEventListener('change',()=>{const custom=$('expenseCategory').value==='custom';$('customExpenseCategoryField').classList.toggle('hidden',!custom);$('customExpenseCategory').required=custom;if(!custom)$('customExpenseCategory').value='';});
+    $('expenseCategoryButton').addEventListener('click',()=>setCategoryEditor(!$('categoryEditor').classList.contains('open')));
+    $('applyExpenseCategory').addEventListener('click',applyExpenseCategory);
+    $('cancelExpenseCategory').addEventListener('click',()=>{if(!selectedExpenseCategory)$('expenseCategoryInput').value='';else $('expenseCategoryInput').value=selectedExpenseCategory;setCategoryEditor(false);});
+    $('expenseCategoryInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyExpenseCategory();}else if(e.key==='Escape'){setCategoryEditor(false);$('expenseCategoryButton').focus();}});
     $('salaryForm').onsubmit=e=>{e.preventDefault();state.salary=Math.max(0,Number($('salaryAmount').value)||0);save();render();showToast('Monthly income updated.');};
     $('monthlyForm').onsubmit=e=>{e.preventDefault();state.bills.push({id:crypto.randomUUID(),name:$('monthlySubject').value.trim(),amount:Number($('monthlyAmount').value),day:Number($('monthlyDay').value)});save();e.target.reset();$('monthlyDay').value='4';render();showToast('Monthly bill added.');};
     $('annualForm').onsubmit=e=>{e.preventDefault();state.annual.push({id:crypto.randomUUID(),name:$('annualSubject').value.trim(),amount:Number($('annualAmount').value),date:$('annualDate').value});save();e.target.reset();$('annualDate').value=localDate();render();showToast('Yearly cost added.');};
-    $('dailyExpenseForm').onsubmit=e=>{e.preventDefault();const custom=$('expenseCategory').value==='custom',category=custom?$('customExpenseCategory').value.trim():$('expenseCategory').value;if(!category){$('customExpenseCategory').focus();return;}state.dailyExpenses.push({id:crypto.randomUUID(),name:$('expenseSubject').value.trim(),category,amount:Number($('expenseAmount').value),date:$('expenseDate').value});save();e.target.reset();$('customExpenseCategoryField').classList.add('hidden');$('customExpenseCategory').required=false;$('expenseDate').value=localDate();render();showToast('Expense saved.');};
+    $('dailyExpenseForm').onsubmit=e=>{e.preventDefault();if(!selectedExpenseCategory){showToast('Add your category first.');setCategoryEditor(true);return;}state.dailyExpenses.push({id:crypto.randomUUID(),name:$('expenseSubject').value.trim(),category:selectedExpenseCategory,amount:Number($('expenseAmount').value),date:$('expenseDate').value});save();e.target.reset();selectedExpenseCategory='';$('expenseCategoryValue').textContent='Add my own category';$('expenseCategoryInput').value='';setCategoryEditor(false);$('expenseDate').value=localDate();render();showToast('Expense saved.');};
     $('insightMonth').addEventListener('change',renderInsight);
     $('scheduleForm').onsubmit=e=>{e.preventDefault();state.tasks.push({id:crypto.randomUUID(),text:$('taskText').value.trim(),date:$('taskDate').value,time:$('taskTime').value,done:false});save();const date=$('taskDate').value;e.target.reset();$('taskDate').value=date;$('taskDate').min=localDate();renderSchedule();showToast('Added to your plan.');};
     $('prevDay').onclick=()=>moveSelected(-1);$('nextDay').onclick=()=>moveSelected(1);
@@ -84,6 +88,8 @@
     initializeCloudAuth(); setInterval(checkReminders,60000);setInterval(refreshCloudState,15000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders();});
   };
+  function setCategoryEditor(open){const editor=$('categoryEditor'),button=$('expenseCategoryButton');editor.classList.toggle('open',open);button.closest('.category-entry').classList.toggle('open',open);editor.setAttribute('aria-hidden',String(!open));button.setAttribute('aria-expanded',String(open));if(open)setTimeout(()=>$('expenseCategoryInput').focus(),80);}
+  function applyExpenseCategory(){const category=$('expenseCategoryInput').value.trim();if(!category){$('expenseCategoryInput').focus();showToast('Type your category first.');return;}selectedExpenseCategory=category;$('expenseCategoryValue').textContent=category;setCategoryEditor(false);$('expenseSubject').focus();}
   function setReceived(value){state.received=value;save();$('receivedYes').classList.toggle('active',value);$('receivedNo').classList.toggle('active',!value);$('incomeAmount').disabled=!value;$('incomeForm').classList.toggle('disabled',!value);$('todayNote').textContent=value?'Add the amount above and save your check-in.':'That’s okay. You can check in again tomorrow.';}
   function go(page){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${page}`));document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const names={income:'TODAY & INCOME',daily:'DAILY EXPENSES',monthly:'MONTHLY BILLS',annual:'YEARLY OUTLOOK',schedule:'DAILY RHYTHM',insight:'MONTHLY INSIGHT'};$('crumb').textContent=names[page];}
   function initializeCloudAuth(){
