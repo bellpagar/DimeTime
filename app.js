@@ -8,7 +8,7 @@
   const parseDate = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
   const money = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'MYR',maximumFractionDigits:2}).format(Number(n)||0);
   const themeNames={emerald:'Emerald',ruby:'Ruby',gold:'Dark'};
-  const setTheme = (theme) => { const valid=themeNames[theme]?theme:'emerald'; document.body.dataset.theme=valid; $('themeControl')?.setAttribute('data-current',valid); localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#571a2a':valid==='gold'?'#171511':'#064c3a'; if($('themeCurrent'))$('themeCurrent').textContent=themeNames[valid]; document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.themeChoice===valid))); };
+  const setTheme = (theme) => { const valid=themeNames[theme]?theme:'emerald'; document.body.dataset.theme=valid; $('themeControl')?.setAttribute('data-current',valid); localStorage.setItem('dimetime-theme',valid); const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=valid==='ruby'?'#841922':valid==='gold'?'#171511':'#064c3a'; if($('themeCurrent'))$('themeCurrent').textContent=themeNames[valid]; document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.themeChoice===valid))); };
   const defaultState = () => ({salary:0,currency:'MYR',bills:[],annual:[],dailyExpenses:[],tasks:[],incomeLog:{},received:null,notified:[]});
   let state = defaultState();
   let cloud = null;
