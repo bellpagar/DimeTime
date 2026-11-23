@@ -25,6 +25,6 @@ body[data-theme="gold"] .button.primary{background:#b3954e;color:#17140d}body[da
 body[data-theme="ruby"] .theme-menu{background:#350c12f5}body[data-theme="ruby"] .theme-label,body[data-theme="ruby"] .topbar{color:#efc3cc}body[data-theme="gold"] .theme-menu{background:#211e17f7}body[data-theme="gold"] .theme-label,body[data-theme="gold"] .topbar{color:#e0d19d}
 body[data-theme] .insight-toolbar,body[data-theme] .schedule-datebar,body[data-theme] .reminder-note,body[data-theme] .time-reminder,body[data-theme] .productivity-card{color:#202925}body[data-theme] .productivity-card strong,body[data-theme] .schedule-datebar strong{color:#202925}body[data-theme="ruby"] .annual-hero p{color:#f1cbd4}body[data-theme="gold"] .annual-hero p{color:#dfd1a5}
 
-:root{--wordmark:'DM Serif Display',Georgia,serif}.brand>span:last-child{font:400 22px var(--wordmark);letter-spacing:-.45px}.brand small{font:600 8px var(--sans);letter-spacing:1.4px}
+:root{--wordmark:'Cormorant Garamond',Georgia,serif}.brand>span:last-child{font:600 25px var(--wordmark);letter-spacing:-.35px}.brand small{font:600 8px var(--sans);letter-spacing:1.4px}
 
 
