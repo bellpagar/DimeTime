@@ -1,5 +1,7 @@
 # DimeTime account setup
 
+For push notifications without email, follow [PUSH_NOTIFICATIONS_SETUP.md](PUSH_NOTIFICATIONS_SETUP.md). It uses this existing Supabase project and does not require a sender domain.
+
 DimeTime uses Supabase Auth for email-and-password accounts and a private, row-level-secured table for each account's data. Your email is the username. The Supabase publishable key is expected to be visible in the website; the database policies are what prevent one account from reading another account's records.
 
 ## Create the private data table
@@ -20,7 +22,7 @@ Keep email confirmation enabled if you want new accounts to verify their email b
 From **Project Settings → API Keys**, copy the Project URL and the publishable key. Share those two public client values so they can be added to `config.js` and the website redeployed.
 
 Do not share the secret key, database password, or an access token. Those are private server credentials and are not needed by DimeTime.
-## Email reminders
+## Email reminders (optional alternative)
 
 Email reminders are sent by a scheduled Supabase Edge Function, so they work while DimeTime is closed. The signed-in account email is the destination. Bill reminders are sent three days before the monthly due date; timed schedule items are sent about one hour before.
 
