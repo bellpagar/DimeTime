@@ -30,7 +30,7 @@ DimeTime uses the existing Supabase project as its notification server. No Resen
 
 5. Open DimeTime, sign in, choose **Monthly bills → Enable push notifications**, and allow the browser prompt. Repeat on each device that should receive alerts. The first alert can arrive at the next scheduled check.
 
-Push alerts cover monthly bills three days before their due day and timed schedule items about one hour before. On iPhone/iPad, first add DimeTime to the Home Screen, open it from there, and then enable notifications (iOS/iPadOS 16.4 or later).
+Push alerts remind users to log daily expenses at 9 PM, notify about monthly bills at 9 AM three days before their due day, notify timed schedule items one hour before, and prompt users to review monthly insight at 9 AM on the 1st. Daily and monthly alerts use the timezone saved when push notifications are enabled; timed tasks use the timezone saved when each task is added. On iPhone/iPad, first add DimeTime to the Home Screen, open it from there, and then enable notifications (iOS/iPadOS 16.4 or later).
 
 Never commit `VAPID_JWK` or `PUSH_CRON_SECRET` to GitHub, and do not paste them into chat. The generated public key is delivered by the Edge Function to the browser; only the private VAPID key stays in Supabase.
 
