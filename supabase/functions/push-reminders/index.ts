@@ -52,11 +52,22 @@ Deno.serve(async (request) => {
     const timezone = state.reminderTimezone || "Asia/Kuala_Lumpur";
     const today = localDate(now, timezone);
     const targetDate = addDays(today, 3);
+    const localNow = localParts(now, timezone);
+    const localHour = Number(localNow.hour);
+    const localMinute = Number(localNow.minute);
     const reminders: Array<{ key: string; title: string; body: string }> = [];
-    for (const bill of state.bills ?? []) {
-      const [year, month] = targetDate.split("-").map(Number);
-      if (Math.min(Number(bill.day), daysInMonth(year, month)) !== Number(targetDate.slice(-2))) continue;
-      reminders.push({ key: `bill:${bill.id}:${targetDate}`, title: `Bill due in 3 days: ${escapeText(bill.name)}`, body: `Set aside ${new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(Number(bill.amount)||0)} for ${escapeText(bill.name)}.` });
+    if (localHour === 21 && localMinute < 5) {
+      reminders.push({ key: `daily-expenses:${today}`, title: "Log today's expenses", body: "Take a moment to add today's spending to DimeTime." });
+    }
+    if (localHour === 9 && localMinute < 5 && today.endsWith("-01")) {
+      reminders.push({ key: `monthly-insight:${today.slice(0,7)}`, title: "Your monthly insight is ready", body: "Take a look at your spending summary in DimeTime." });
+    }
+    if (localHour === 9 && localMinute < 5) {
+      for (const bill of state.bills ?? []) {
+        const [year, month] = targetDate.split("-").map(Number);
+        if (Math.min(Number(bill.day), daysInMonth(year, month)) !== Number(targetDate.slice(-2))) continue;
+        reminders.push({ key: `bill:${bill.id}:${targetDate}`, title: `Bill due in 3 days: ${escapeText(bill.name)}`, body: `Set aside ${new Intl.NumberFormat("en-MY", { style: "currency", currency: "MYR" }).format(Number(bill.amount)||0)} for ${escapeText(bill.name)}.` });
+      }
     }
     for (const task of state.tasks ?? []) {
       if (!task.time || task.done) continue;
