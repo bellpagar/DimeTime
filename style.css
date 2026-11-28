@@ -44,3 +44,6 @@ body[data-theme="gold"] .saved-category-label{color:#827958}body[data-theme="gol
 
 /* The dashboard bill shortcut sits on the dark marble background. */
 body .section-heading .text-button[data-go=monthly]{color:#fff}body .section-heading .text-button[data-go=monthly]:hover,body .section-heading .text-button[data-go=monthly]:focus-visible{color:#fff;opacity:.88}
+
+/* Match the expense page heading copy to its selected marble palette. */
+body[data-theme=ruby] .page-heading .eyebrow{color:#efb9c2}body[data-theme=ruby] .page-heading .lede{color:#f0cdd2}body[data-theme=gold] .page-heading .eyebrow{color:#d7c782}body[data-theme=gold] .page-heading .lede{color:#dfd1a5}
