@@ -38,3 +38,6 @@ body[data-theme="ruby"] .saved-category-label{color:#8b6670}body[data-theme="rub
 body[data-theme="gold"] .saved-category-label{color:#827958}body[data-theme="gold"] .saved-category-chip{border-color:#e8dfc5;color:#5f532e}body[data-theme="gold"] .saved-category-chip:hover,body[data-theme="gold"] .saved-category-chip.selected{border-color:#b59a56;background:#f4eedb;color:#75602a}
 @media(prefers-reduced-motion:reduce){.saved-category-chip{transition:none!important}}
 
+
+/* Push notification control sits over the marble page background on every theme. */
+#pushReminderToggle{color:#fff}#pushReminderToggle:hover,#pushReminderToggle:focus-visible{color:#fff;opacity:.88}
