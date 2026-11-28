@@ -41,3 +41,6 @@ body[data-theme="gold"] .saved-category-label{color:#827958}body[data-theme="gol
 
 /* Push notification control sits over the marble page background on every theme. */
 #pushReminderToggle{color:#fff}#pushReminderToggle:hover,#pushReminderToggle:focus-visible{color:#fff;opacity:.88}
+
+/* The dashboard bill shortcut sits on the dark marble background. */
+body .section-heading .text-button[data-go=monthly]{color:#fff}body .section-heading .text-button[data-go=monthly]:hover,body .section-heading .text-button[data-go=monthly]:focus-visible{color:#fff;opacity:.88}
